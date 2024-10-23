@@ -5,6 +5,53 @@ Contain a Cache Class
 import redis
 from uuid import uuid4
 from typing import Union, Callable, Any, Optional
+import functools
+
+
+def call_history(method: Callable) -> Callable:
+    """
+    Decorator function to track I/O operations
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        inkey = f"{method.__qualname__}:inputs"
+        outkey = f"{method.__qualname__}:outputs"
+        self._redis.rpush(inkey, str(args))
+        out = method(self, *args, **kwargs)
+        self._redis.rpush(outkey, out)
+
+        return out
+    return wrapper
+
+
+def count_calls(method: Callable) -> Callable:
+    """
+    Decorator function to track function calls
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        key = method.__qualname__
+        self._redis.setnx(key, 0)
+        self._redis.incr(key)
+
+        return method(self, *args, **kwargs)
+
+    return wrapper
+
+
+def replay(func: Callable) -> None:
+    """
+    Display the history of calls of a particular function
+    """
+    _redis = redis.Redis()
+    func_name = func.__qualname__
+    ins = _redis.lrange(f"{func_name}:inputs", 0, -1)
+    outs = _redis.lrange(f"{func_name}:outputs", 0, -1)
+
+    for arg, out in zip(ins, outs):
+        arg = arg.decode("utf-8")
+        out = out.decode("utf-8")
+        print(f"{func_name}(*{arg}) -> {out}")
 
 
 class Cache():
@@ -16,6 +63,8 @@ class Cache():
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @count_calls
+    @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
         store the input data in Redis
