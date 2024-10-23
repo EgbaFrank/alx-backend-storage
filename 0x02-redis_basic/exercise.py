@@ -47,6 +47,7 @@ def replay(func: Callable) -> None:
     func_name = func.__qualname__
     ins = _redis.lrange(f"{func_name}:inputs", 0, -1)
     outs = _redis.lrange(f"{func_name}:outputs", 0, -1)
+    print(f"{func_name} was called {_redis.get(func_name).decode('utf-8')} times:")
 
     for arg, out in zip(ins, outs):
         arg = arg.decode("utf-8")
