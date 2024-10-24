@@ -17,7 +17,7 @@ def cache_response(func: Callable) -> Callable:
         """Cache wrapper"""
         _redis = redis.Redis()
 
-        url = args[0] if args else "unknown"
+        url = args if args else "unknown"
 
         count_key = f"count:{url}"
         cache_key = f"cache:{url}"
@@ -39,6 +39,5 @@ def cache_response(func: Callable) -> Callable:
 @cache_response
 def get_page(url: str) -> str:
     """Obtain the HTML content of a particular URL"""
-    response = requests.get(url)
 
-    return response.text
+    return requests.get(url).text
