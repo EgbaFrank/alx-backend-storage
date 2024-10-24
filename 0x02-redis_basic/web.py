@@ -8,16 +8,17 @@ from typing import Callable
 import functools
 
 
+_redis = redis.Redis()
+
+
 def cache_response(func: Callable) -> Callable:
     """
     Track how many times a particular URL was accessed
     """
     @functools.wraps(func)
-    def wrapper(args: str) -> str:
+    def wrapper(*args, **kwargs) -> str:
         """Cache wrapper"""
-        _redis = redis.Redis()
-
-        url = args if args else "unknown"
+        url = args[0] if args else "unknown"
 
         count_key = f"count:{url}"
         cache_key = f"cache:{url}"
@@ -29,7 +30,7 @@ def cache_response(func: Callable) -> Callable:
         if cached_page:
             return cached_page.decode("utf-8")
 
-        result = func(args)
+        result = func(*args, **kwargs)
         _redis.setex(cache_key, 10, result)
 
         return result
@@ -39,5 +40,6 @@ def cache_response(func: Callable) -> Callable:
 @cache_response
 def get_page(url: str) -> str:
     """Obtain the HTML content of a particular URL"""
+    response = requests.get(url)
 
-    return requests.get(url).text
+    return response.text
