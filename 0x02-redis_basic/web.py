@@ -15,12 +15,23 @@ def count_access(func: Callable) -> Callable:
     @functools.wraps(func)
     def wrapper(*args):
         _redis = redis.Redis()
-        key = f"count:{args[0]}"
-        _redis.setnx(key, 0)
-        _redis.expire(key, 10)
-        _redis.incr(key)
 
-        return func(*args)
+        url = args[0] if args else "unknown"
+
+        count_key = f"count:{url}"
+        cache_key = f"cache:{url}"
+
+        _redis.setnx(count_key, 0)
+        _redis.incr(count_key)
+
+        cached_page = _redis.get(cache_key)
+        if cached_page:
+            return cached_page.decode("utf-8")
+
+        result = func(*args)
+        _redis.setex(cache_key, 10, result)
+
+        return result
     return wrapper
 
 
