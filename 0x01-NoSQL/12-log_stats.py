@@ -25,7 +25,7 @@ if __name__ == "__main__":
     print(f"{total_logs} logs")  # First line: total number of logs
     print("Methods:")  # Second line: header for methods
     for method in methods:
-        print(f"    method {method}: {method_counts[method]}")  # Count for each method
+        print(f"\tmethod {method}: {method_counts[method]}")  # Count for each method
 
     # Line for GET requests to /status
     print(f"{get_status_count} status check")
